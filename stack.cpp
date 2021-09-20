@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include <math.h>
 
-typedef int StackElem;
-const char* STACK_TYPE = "int";
-
 const char* OK = '\0';
 const bool FAIL = 0;
 const int POISON = -666;
+
+typedef int StackElem;
+const char* STACK_TYPE = "int";
 
 struct Stack {
   StackElem* data;
@@ -58,7 +58,7 @@ int main() {
 }
 
 int StackCtor(Stack* stack) {
-    if (!stack)       assert(FAIL && "STACK_NULL");
+    if (stack == NULL)        assert(FAIL && "STACK_NULL");
     if (stack->capacity <= 0) assert(FAIL && "CAPACITY_ERROR");
 
     stack->data = (StackElem*)calloc(stack->capacity, sizeof(stack->data[0]));
@@ -67,9 +67,8 @@ int StackCtor(Stack* stack) {
     for (int curIdx = 0; curIdx < stack->capacity; curIdx++) {
         stack->data[curIdx] = POISON;
     }
-
     stack->size = 0;
-
+	
     return 1;
 }
 
@@ -87,10 +86,10 @@ int StackPush(Stack* stack, StackElem value) {
     CheckAll(stack);
 
     if (stack->size >= stack->capacity) stack->data = StackIncrease(stack); //ÃÈÑÒÅÐÅÇÈÑ
+	
     stack->data[stack->size++] = value;
-
-
     CheckAll(stack);
+	
     return 1;
 }
 
@@ -98,15 +97,16 @@ StackElem StackPop(Stack* stack) {
     CheckAll(stack);
 
     if (stack->capacity >= 2*stack->size) StackDecrease(stack);
-    if (stack->size == 0) assert(0 && "STACK_UNDERFLOW");
+    if (stack->size == 0)    assert(FAIL && "STACK_UNDERFLOW");
 
     StackElem popped = stack->data[--stack->size];
     stack->data[stack->size] = POISON;
+	
     return popped;
 }
 
 const char* IsStackOk(const Stack* stack) {
-    if (      stack == nullptr) return "STACK_NULL";
+    if (stack == nullptr) return "STACK_NULL";
 
     return OK;
 }
@@ -193,10 +193,8 @@ StackElem* StackIncrease(Stack* stack) {
     CheckAll(stack);
 
     StackElem* newPointer = (StackElem*)realloc(stack->data, stack->capacity*sizeof(stack->data[0])*3/2 + 1);
-
-    assert(newPointer && "NO MEMORY TO INCREASE");
-    //assert(newPointer == stack->data && "POINTER MOVED TO A NEW LOCATION    ");
-
+    assert(newPointer && "MEMORY_INCREASE_ERR");
+    
     stack->capacity = stack->capacity*3/2 + 1;
     return newPointer;
 }
@@ -205,7 +203,7 @@ StackElem* StackDecrease(Stack* stack) {
     CheckAll(stack);
 
     StackElem* newPointer = (StackElem*)realloc(stack->data, stack->capacity*sizeof(stack->data[0])/2);
-    assert(newPointer && "MEMORY DECREASE ERROR");
+    assert(newPointer && "MEMORY_DECREASE_ERROR");
 
     stack->capacity /= 2;
     return newPointer;
