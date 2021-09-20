@@ -11,19 +11,19 @@ typedef int StackElem;
 const char* STACK_TYPE = "int";
 
 struct Stack {
-  StackElem* data;
-  int size;
-  int capacity;
+	StackElem* data;
+	int size;
+	int capacity;
 
-  struct {
-    const char* name;
-    const char* creationFile;
-    const char* creationFunction;
-    const int creationLine;
-    char* dumpFile;
-    char* dumpFunction;
-    int dumpLine;
-  } DumpInfo;
+	struct {
+		const char* name;
+		const char* creationFile;
+		const char* creationFunction;
+		const int creationLine;
+		char* dumpFile;
+		char* dumpFunction;
+		int dumpLine;
+	} DumpInfo;
 };
 
 int StackCtor(Stack* stack);
@@ -195,7 +195,7 @@ StackElem* StackIncrease(Stack* stack) {
     StackElem* newPointer = (StackElem*)realloc(stack->data, stack->capacity*sizeof(stack->data[0])*3/2 + 1);
     assert(newPointer && "MEMORY_INCREASE_ERR");
     
-    stack->capacity = stack->capacity*3/2 + 1;
+    stack->capacity = stack->capacity * 3 / 2 + 1;
     return newPointer;
 }
 
