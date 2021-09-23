@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 
-const int POISON = 0xE2202;
+const int POISON = ;
 
 typedef int StackElem;
 const char* STACK_TYPE = "int";
