@@ -1,11 +1,12 @@
 #include <assert.h>
-#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define LOW_LEVEL  1
 #define MID_LEVEL  2
 #define HIGH_LEVEL 3
+#define LOCATION __FILE__, __FUNCTION__, __LINE__
 
 #define STACK_DEBUG HIGH_LEVEL
 
@@ -15,27 +16,20 @@
 
 #define StackCtor(stack)         \
     Stack stack;                 \
-    StackCtor_(&stack, #stack);  \
+    StackCtor_(&stack, #stack);
 
 #define CheckAll(stack)                                                                       \
     if (Errors StackError = IsAllOk(stack)) {                                                 \
         printf("Error %s, read full description in dump file\n", ErrorToString(StackError));  \
                                                                                               \
-        stack->dumpInfo.file = __FILE__;                                                      \
-        stack->dumpInfo.line = __LINE__;                                                      \
-        stack->dumpInfo.function = __FUNCTION__;                                              \
-        stack->dumpInfo.name = #stack;                                                        \
+        stack->dumpInfo = {LOCATION, #stack};                                                 \                                                   
                                                                                               \
-                                                                                              \
-        StackDump(stack);                                                                     \
-        assert(0);                                                                            \
+        StackDump(stack);                                                                    
+        assert(0 && "Verify failed");                                                         
     }
-
-#define LOCATION __FILE__, __FUNCTION__, __LINE__
 
 const int POISON = 0xE2202;
 const long long CANARY = 0xDEADBEEFDEADBEEF;
-const char* FREE = -0
 
 typedef int StackElem;
 const char* STACK_TYPE = "int";
@@ -135,7 +129,7 @@ int StackDtor(Stack* stack) {
     CheckAll(stack);
 
     free(stack->data);
-    stack->data = (char*) 0xF2EE;
+    stack->data = (char*)0xF2EE;
     stack->size = -1;
 
     return 0;
@@ -145,11 +139,9 @@ int StackPush(Stack* stack, StackElem value) {
     CheckAll(stack);
 
     if (stack->size >= stack->capacity) stack->data = StackIncrease(stack);
-    CheckAll(stack);
-
     *(StackElem*)(stack->data + sizeof(long long) + (stack->size++)*sizeof(StackElem)) = value;
-    CheckAll(stack);
 
+    CheckAll(stack);
     return 0;
 }
 
@@ -157,20 +149,17 @@ StackElem StackPop(Stack* stack) {
     CheckAll(stack);
 
     if (stack->capacity >= 2*stack->size) StackDecrease(stack);
-    CheckAll(stack);
-
     assert(stack->size != 0 && "STACK_UNDERFLOW");
 
     StackElem popped = *(StackElem*)(stack->data + sizeof(long long) + (--stack->size)*sizeof(StackElem));
     *(StackElem*)(stack->data + sizeof(long long) + (stack->size)*sizeof(StackElem)) = POISON;
 
     CheckAll(stack);
-
     return popped;
 }
 
 Errors IsStackOk(const Stack* stack) {
-    if (stack == nullptr)             return STACK_NULL;
+    if (stack == nullptr)                 return STACK_NULL;
 
     #if (STACK_DEBUG >= MID_LEVEL)
         if (stack->canaryLeft != CANARY)  return LEFT_STACK_CANARY_IRRUPTION;
@@ -290,6 +279,7 @@ char* StackIncrease(Stack* stack) {
 
     *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = cellCanary;
 
+    CheckAll(stack);
     return newPointer;
 }
 
@@ -310,5 +300,7 @@ char* StackDecrease(Stack* stack) {
     #endif
 
     *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = cellCanary;
+
+    CheckAll(stack);
     return newPointer;
 }

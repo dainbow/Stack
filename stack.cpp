@@ -6,6 +6,7 @@
 #define LOW_LEVEL  1
 #define MID_LEVEL  2
 #define HIGH_LEVEL 3
+#define LOCATION __FILE__, __FUNCTION__, __LINE__
 
 #define STACK_DEBUG HIGH_LEVEL
 
@@ -13,25 +14,20 @@
     #define STACK_DEBUG LOW_LEVEL
 #endif
 
-#define StackCtor(stack)         \
-    Stack stack;                 \
-    StackCtor_(&stack, #stack);  \
+#define StackCtor(stack)                           \
+    Stack stack;                                   \
+    stack.creationInfo = {LOCATION, #stack};       \
+    StackCtor_(&stack);
 
 #define CheckAll(stack)                                                                       \
     if (Errors StackError = IsAllOk(stack)) {                                                 \
         printf("Error %s, read full description in dump file\n", ErrorToString(StackError));  \
                                                                                               \
-        stack->dumpInfo.file = __FILE__;                                                      \
-        stack->dumpInfo.line = __LINE__;                                                      \
-        stack->dumpInfo.function = __FUNCTION__;                                              \
-        stack->dumpInfo.name = #stack;                                                        \
-                                                                                              \
+        stack->dumpInfo = {LOCATION, #stack};                                                 \
                                                                                               \
         StackDump(stack);                                                                     \
-        assert(0);                                                                            \
+        assert(0 && "Verify failed");                                                         \
     }
-
-#define LOCATION __FILE__, __FUNCTION__, __LINE__
 
 const int POISON = 0xE2202;
 const long long CANARY = 0xDEADBEEFDEADBEEF;
@@ -74,7 +70,7 @@ struct Stack {
     long long canaryRight;
 };
 
-int StackCtor_(Stack* stack, const char* stackName);
+int StackCtor_(Stack* stack);
 int StackDtor(Stack* stack);
 
 int StackPush(Stack* stack, StackElem value);
@@ -101,17 +97,19 @@ int main() {
 
     StackPop(&intStack);
 
+    //intStack.dumpInfo = {LOCATION, "intStack"};
+    //StackDump(&intStack);
+
     StackDtor(&intStack);
 }
 
-int StackCtor_(Stack* stack, const char* stackName) {
+int StackCtor_(Stack* stack) {
     assert(stack != nullptr && "STACK_NULL");
 
     stack->canaryLeft = CANARY;
 
-    stack->capacity = 10000;
+    stack->capacity = 100;
     stack->size = 0;
-    stack->creationInfo = {LOCATION, stackName};
 
     stack->data = (char*)calloc(stack->capacity*sizeof(StackElem) + 2*sizeof(long long), 1);
     assert(stack->data != nullptr && "DATA_NULL");
@@ -221,11 +219,12 @@ int StackDump(Stack* stack, FILE* outstream) {
     #if (STACK_DEBUG >= HIGH_LEVEL)
         fprintf(outstream, "{\n");
         for(int curIdx = 0; curIdx < stack->capacity; curIdx++) {
+            StackElem* curElement = (StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem));
             if (curIdx < stack->size) {
-                fprintf(outstream, "   *[%d][%p] = %d (%s)\n", curIdx, (StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), (*(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) == POISON) ? "MAYBE POISON" : "OK");
+                fprintf(outstream, "   *[%d][%p] = %d (%s)\n", curIdx, curElement, *curElement, (*curElement == POISON) ? "MAYBE POISON" : "OK");
             }
             else {
-                fprintf(outstream, "   [%d][%p] = %d (%s)\n", curIdx, (StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), (*(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) == POISON) ? "POISON" : "NOT POISON, BUT SHOULD BE");
+                fprintf(outstream, "   [%d][%p] = %d (%s)\n", curIdx, curElement, *curElement, (*curElement == POISON) ? "POISON" : "NOT POISON, BUT SHOULD BE");
             }
         }
 
