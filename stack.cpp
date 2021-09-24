@@ -19,7 +19,7 @@
     stack.creationInfo = {LOCATION, #stack};       \
     StackCtor_(&stack);
 
-#define CheckAll(stack)                                                                       \
+#define CheckAllStack(stack)                                                                       \
     if (Errors StackError = IsAllOk(stack)) {                                                 \
         printf("Error %s, read full description in dump file\n", ErrorToString(StackError));  \
                                                                                               \
@@ -129,7 +129,7 @@ int StackCtor_(Stack* stack) {
 }
 
 int StackDtor(Stack* stack) {
-    CheckAll(stack);
+    CheckAllStack(stack);
 
     free(stack->data);
     stack->data = (char*)0xF2EE;
@@ -139,17 +139,17 @@ int StackDtor(Stack* stack) {
 }
 
 int StackPush(Stack* stack, StackElem value) {
-    CheckAll(stack);
+    CheckAllStack(stack);
 
     if (stack->size >= stack->capacity) stack->data = StackIncrease(stack);
     *(StackElem*)(stack->data + sizeof(long long) + (stack->size++)*sizeof(StackElem)) = value;
 
-    CheckAll(stack);
+    CheckAllStack(stack);
     return 0;
 }
 
 StackElem StackPop(Stack* stack) {
-    CheckAll(stack);
+    CheckAllStack(stack);
 
     if (stack->capacity >= 2*stack->size) StackDecrease(stack);
     assert(stack->size != 0 && "STACK_UNDERFLOW");
@@ -157,7 +157,7 @@ StackElem StackPop(Stack* stack) {
     StackElem popped = *(StackElem*)(stack->data + sizeof(long long) + (--stack->size)*sizeof(StackElem));
     *(StackElem*)(stack->data + sizeof(long long) + (stack->size)*sizeof(StackElem)) = POISON;
 
-    CheckAll(stack);
+    CheckAllStack(stack);
     return popped;
 }
 
@@ -266,7 +266,7 @@ const char* ErrorToString(Errors error) {
 }
 
 char* StackIncrease(Stack* stack) {
-    CheckAll(stack);
+    CheckAllStack(stack);
 
     long long cellCanary = *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = CANARY;
     *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = 0;
@@ -283,12 +283,12 @@ char* StackIncrease(Stack* stack) {
 
     *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = cellCanary;
 
-    CheckAll(stack);
+    CheckAllStack(stack);
     return newPointer;
 }
 
 char* StackDecrease(Stack* stack) {
-    CheckAll(stack);
+    CheckAllStack(stack);
 
     long long cellCanary = *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = CANARY;
     *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = 0;
@@ -305,6 +305,6 @@ char* StackDecrease(Stack* stack) {
 
     *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = cellCanary;
 
-    CheckAll(stack);
+    CheckAllStack(stack);
     return newPointer;
 }
