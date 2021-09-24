@@ -1,14 +1,46 @@
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
-const int POISON = ;
+#define LOW_LEVEL  1
+#define MID_LEVEL  2
+#define HIGH_LEVEL 3
+
+#define STACK_DEBUG HIGH_LEVEL
+
+#if !defined(STACK_DEBUG)
+    #define STACK_DEBUG LOW_LEVEL
+#endif
+
+#define StackCtor(stack)         \
+    Stack stack;                 \
+    StackCtor_(&stack, #stack);  \
+
+#define CheckAll(stack)                                                                       \
+    if (Errors StackError = IsAllOk(stack)) {                                                 \
+        printf("Error %s, read full description in dump file\n", ErrorToString(StackError));  \
+                                                                                              \
+        stack->dumpInfo.file = __FILE__;                                                      \
+        stack->dumpInfo.line = __LINE__;                                                      \
+        stack->dumpInfo.function = __FUNCTION__;                                              \
+        stack->dumpInfo.name = #stack;                                                        \
+                                                                                              \
+                                                                                              \
+        StackDump(stack);                                                                     \
+        assert(0);                                                                            \
+    }
+
+#define LOCATION __FILE__, __FUNCTION__, __LINE__
+
+const int POISON = 0xE2202;
+const long long CANARY = 0xDEADBEEFDEADBEEF;
+const char* FREE = -0
 
 typedef int StackElem;
 const char* STACK_TYPE = "int";
 
-enum Errors {
+typedef enum {
     OK,
     STACK_OVERFLOW,
     STACK_UNDERFLOW,
@@ -16,70 +48,85 @@ enum Errors {
     DATA_NULL,
     STACK_FREE,
     STACK_NULL,
-    CAPACITY_INFINITE
+    CAPACITY_INFINITE,
+    LEFT_STACK_CANARY_IRRUPTION,
+    RIGHT_STACK_CANARY_IRRUPTION,
+    LEFT_DATA_CANARY_IRRUPTION,
+    RIGHT_DATA_CANARY_IRRUPTION
+} Errors;
+
+struct VarInfo {
+    const char* file;
+    const char* function;
+    int line;
+
+    const char* name;
 };
 
 struct Stack {
-    StackElem* data;
+    long long canaryLeft;
+
+    struct VarInfo creationInfo;
+    struct VarInfo dumpInfo;
     int size;
     int capacity;
+    char* data;
 
-    struct {
-        const char* name;
-        const char* creationFile;
-        const char* creationFunction;
-        const int creationLine;
-        const char * dumpFile;
-        const char* dumpFunction;
-        int dumpLine;
-	} DumpInfo;
+    long long canaryRight;
 };
 
-int StackCtor(Stack* stack);
+int StackCtor_(Stack* stack, const char* stackName);
 int StackDtor(Stack* stack);
 
 int StackPush(Stack* stack, StackElem value);
 StackElem StackPop(Stack* stack);
 
-enum Errors IsStackOk(const Stack* stack);
-enum Errors IsDataOk(const Stack* stack);
-enum Errors IsCapacityOk(const Stack* stack);
-enum Errors IsSizeOk(const Stack* stack);
-enum Errors IsAllOk(const Stack* stack);
+Errors IsStackOk(const Stack* stack);
+Errors IsDataOk(const Stack* stack);
+Errors IsCapacityOk(const Stack* stack);
+Errors IsSizeOk(const Stack* stack);
+Errors IsAllOk(const Stack* stack);
 
 int StackDump(Stack* stack, FILE* outstream = stderr);
-void CheckAll(Stack* stack);
-const char* ErrorToString(enum Errors error);
+const char* ErrorToString(Errors error);
 
-StackElem* StackIncrease(Stack* stack);
-StackElem* StackDecrease(Stack* stack);
+char* StackIncrease(Stack* stack);
+char* StackDecrease(Stack* stack);
 
 int main() {
-    Stack intStack = {nullptr, 0, 2, "intStack", __FILE__, __FUNCTION__, __LINE__ - 4, nullptr, nullptr, 0};
-    StackCtor(&intStack);
+    StackCtor(intStack);
 
     StackPush(&intStack, 5);
     StackPush(&intStack, 12);
     StackPush(&intStack, 13);
 
-    printf("%d\n", StackPop(&intStack));
-    printf("%d\n", StackPop(&intStack));
-    printf("%d\n", StackPop(&intStack));
+    StackPop(&intStack);
 
     StackDtor(&intStack);
 }
 
-int StackCtor(Stack* stack) {
+int StackCtor_(Stack* stack, const char* stackName) {
     assert(stack != nullptr && "STACK_NULL");
-    assert(stack->capacity > 0 && "CAPACITY_ERROR");
 
-    stack->data = (StackElem*)calloc(stack->capacity, sizeof(stack->data[0]));
+    stack->canaryLeft = CANARY;
+
+    stack->capacity = 10000;
+    stack->size = 0;
+    stack->creationInfo = {LOCATION, stackName};
+
+    stack->data = (char*)calloc(stack->capacity*sizeof(StackElem) + 2*sizeof(long long), 1);
     assert(stack->data != nullptr && "DATA_NULL");
 
-    for (int curIdx = 0; curIdx < stack->capacity; curIdx++) {
-        stack->data[curIdx] = POISON;
-    }
-    stack->size = 0;
+    stack->canaryRight = CANARY;
+
+    *(long long*)(stack->data) = CANARY;
+    *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = CANARY;
+
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        for (int curIdx = 0; curIdx < stack->capacity; curIdx++) {
+            *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) = POISON;
+        }
+    #endif
 
     return 0;
 }
@@ -88,7 +135,7 @@ int StackDtor(Stack* stack) {
     CheckAll(stack);
 
     free(stack->data);
-    stack->data = (StackElem*) 0xF2EE;
+    stack->data = (char*) 0xF2EE;
     stack->size = -1;
 
     return 0;
@@ -100,7 +147,7 @@ int StackPush(Stack* stack, StackElem value) {
     if (stack->size >= stack->capacity) stack->data = StackIncrease(stack);
     CheckAll(stack);
 
-    stack->data[stack->size++] = value;
+    *(StackElem*)(stack->data + sizeof(long long) + (stack->size++)*sizeof(StackElem)) = value;
     CheckAll(stack);
 
     return 0;
@@ -114,44 +161,56 @@ StackElem StackPop(Stack* stack) {
 
     assert(stack->size != 0 && "STACK_UNDERFLOW");
 
-    StackElem popped = stack->data[--stack->size];
-    stack->data[stack->size] = POISON;
+    StackElem popped = *(StackElem*)(stack->data + sizeof(long long) + (--stack->size)*sizeof(StackElem));
+    *(StackElem*)(stack->data + sizeof(long long) + (stack->size)*sizeof(StackElem)) = POISON;
+
+    CheckAll(stack);
 
     return popped;
 }
 
-enum Errors IsStackOk(const Stack* stack) {
-    if (stack == nullptr) return STACK_NULL;
+Errors IsStackOk(const Stack* stack) {
+    if (stack == nullptr)             return STACK_NULL;
+
+    #if (STACK_DEBUG >= MID_LEVEL)
+        if (stack->canaryLeft != CANARY)  return LEFT_STACK_CANARY_IRRUPTION;
+        if (stack->canaryRight != CANARY) return RIGHT_STACK_CANARY_IRRUPTION;
+    #endif
 
     return OK;
 }
 
-enum Errors IsDataOk(const Stack* stack) {
-    if (stack->data == nullptr)             return  DATA_NULL;
-    if (stack->data == (StackElem*)0xF2EE)  return STACK_FREE;
+Errors IsDataOk(const Stack* stack) {
+    #if (STACK_DEBUG >= MID_LEVEL)
+        if (*(long long*)(stack->data) != CANARY) return LEFT_STACK_CANARY_IRRUPTION;
+        if (*(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) != CANARY) return RIGHT_STACK_CANARY_IRRUPTION;
+    #endif
+
+    if (stack->data == nullptr)        return  DATA_NULL;
+    if (stack->data == (char*)0xF2EE)  return STACK_FREE;
 
     return OK;
 }
 
-enum Errors IsCapacityOk(const Stack* stack) {
+Errors IsCapacityOk(const Stack* stack) {
     if (stack->capacity < 0)        return CAPACITY_NEGATIVE;
     if (!isfinite(stack->capacity)) return CAPACITY_INFINITE;
 
     return OK;
 }
 
-enum Errors IsSizeOk(const Stack* stack) {
+Errors IsSizeOk(const Stack* stack) {
     if (stack->size > stack->capacity)   return STACK_OVERFLOW;
     if (stack->size < 0)                 return STACK_UNDERFLOW;
 
     return OK;
 }
 
-enum Errors IsAllOk(const Stack* stack) {
-    if (enum Errors StackError = IsStackOk(stack))     return StackError;
-    if (enum Errors StackError =  IsDataOk(stack))     return StackError;
-    if (enum Errors StackError =  IsCapacityOk(stack)) return StackError;
-    if (enum Errors StackError =  IsSizeOk(stack))     return StackError;
+Errors IsAllOk(const Stack* stack) {
+    if (Errors StackError =  IsStackOk(stack))    return StackError;
+    if (Errors StackError =  IsDataOk(stack))     return StackError;
+    if (Errors StackError =  IsCapacityOk(stack)) return StackError;
+    if (Errors StackError =  IsSizeOk(stack))     return StackError;
 
     return OK;
 }
@@ -159,52 +218,30 @@ enum Errors IsAllOk(const Stack* stack) {
 int StackDump(Stack* stack, FILE* outstream) {
     setvbuf(outstream, NULL, _IONBF, 0);
 
-    fprintf(outstream, "Dump from %s() at %s(%d): IsStackOk() FAILED\n", stack->DumpInfo.dumpFunction, stack->DumpInfo.dumpFile, stack->DumpInfo.dumpLine);
-    fprintf(outstream, "stack <%s> [%p] (ok) \"%s\" from %s (%d), %s(): {\n", STACK_TYPE, stack, stack->DumpInfo.name, stack->DumpInfo.creationFile, stack->DumpInfo.creationLine, stack->DumpInfo.creationFunction);
+    fprintf(outstream, "Dump from %s() at %s(%d) in stack called now %s: IsStackOk() FAILED\n", stack->dumpInfo.function, stack->dumpInfo.file, stack->dumpInfo.line, stack->dumpInfo.name);
+    fprintf(outstream, "stack <%s> [%p] (ok) \"%s\" from %s (%d), %s(): {\n", STACK_TYPE, stack, stack->creationInfo.name, stack->creationInfo.file, stack->creationInfo.line, stack->creationInfo.function);
     fprintf(outstream, "size = %d (%s)\n", stack->size, ErrorToString(IsSizeOk(stack)));
     fprintf(outstream, "capacity = %d (%s)\n\n", stack->capacity, ErrorToString(IsCapacityOk(stack)));
-    fprintf(outstream, "data[%p] {\n", stack->data);
+    fprintf(outstream, "data[%p] (%s)\n", stack->data, ErrorToString(IsDataOk(stack)));
 
-    for(int curIdx = 0; curIdx < stack->capacity && stack->data != (StackElem*)0xF2EE; curIdx++) {
-        if (curIdx < stack->size) {
-            fprintf(outstream, "   *[%d] = %d\n", curIdx, stack->data[curIdx]);
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        fprintf(outstream, "{\n");
+        for(int curIdx = 0; curIdx < stack->capacity; curIdx++) {
+            if (curIdx < stack->size) {
+                fprintf(outstream, "   *[%d][%p] = %d (%s)\n", curIdx, (StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), (*(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) == POISON) ? "MAYBE POISON" : "OK");
+            }
+            else {
+                fprintf(outstream, "   [%d][%p] = %d (%s)\n", curIdx, (StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)), (*(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) == POISON) ? "POISON" : "NOT POISON, BUT SHOULD BE");
+            }
         }
-        else {
-            fprintf(outstream, "   [%d] = %d (POISON)\n", curIdx, stack->data[curIdx]);
-        }
-    }
 
-    fprintf(outstream, "}\n");
-    /* Dump from StackPush() at main.cpp(130): OK() FAILED
-    stack <int> [0x000856A] (STACK_NULL) "stk" from main.cpp (25), int main(): {
-    size = 3 (ok)
-    capacity = 5 (ok)
+        fprintf(outstream, "}\n");
+    #endif
 
-    data[0x0009230] {
-        *[0] = 10
-        *[1]= 20
-        *[2] = 30
-        [3] = -666 (POISON)
-        [4] = -666 (POISON)
-        }
-    } */
     return 0;
 }
 
-void CheckAll(Stack* stack) {
-    if (enum Errors StackError = IsAllOk(stack)) {
-        printf("Error %s, read full description in dump file\n", ErrorToString(StackError));
-
-        stack->DumpInfo.dumpFile = __FILE__;
-        stack->DumpInfo.dumpLine = __LINE__ - 4;
-        stack->DumpInfo.dumpFunction = __FUNCTION__;
-
-        StackDump(stack);
-        assert(0);
-    }
-}
-
-const char* ErrorToString(enum Errors error) {
+const char* ErrorToString(Errors error) {
     switch(error) {
         case OK:
             return "Ok";
@@ -222,27 +259,56 @@ const char* ErrorToString(enum Errors error) {
             return "Stack is null";
         case CAPACITY_INFINITE:
             return "Capacity is infinite";
+        case LEFT_STACK_CANARY_IRRUPTION:
+            return "Someone irrupted left stack canary";
+        case RIGHT_STACK_CANARY_IRRUPTION:
+            return "Someone irrupted right stack canary";
+        case LEFT_DATA_CANARY_IRRUPTION:
+            return "Someone irrupted left data canary";
+        case RIGHT_DATA_CANARY_IRRUPTION:
+            return "Someone irrupted right data canary";
         default:
             return "Unknown error";
     }
 }
 
-StackElem* StackIncrease(Stack* stack) {
+char* StackIncrease(Stack* stack) {
     CheckAll(stack);
 
-    StackElem* newPointer = (StackElem*)realloc(stack->data, stack->capacity*sizeof(stack->data[0])*3/2 + 1);
-    assert(newPointer != nullptr && "MEMORY_INCREASE_ERR");
+    long long cellCanary = *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = CANARY;
+    *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = 0;
 
+    char* newPointer = (char*)realloc(stack->data, 2*sizeof(long long) + stack->capacity*sizeof(StackElem)*3/2 + 1);
+    assert(newPointer != nullptr && "MEMORY_INCREASE_ERR");
     stack->capacity = stack->capacity * 3 / 2 + 1;
+
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        for (int curIdx = stack->size + 1; curIdx < stack->capacity; curIdx++) {
+            *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) = POISON;
+        }
+    #endif
+
+    *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = cellCanary;
+
     return newPointer;
 }
 
-StackElem* StackDecrease(Stack* stack) {
+char* StackDecrease(Stack* stack) {
     CheckAll(stack);
 
-    StackElem* newPointer = (StackElem*)realloc(stack->data, stack->capacity*sizeof(stack->data[0])/2);
-    assert(newPointer != nullptr && "MEMORY_DECREASE_ERROR");
+    long long cellCanary = *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = CANARY;
+    *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = 0;
 
+    char* newPointer = (char*)realloc(stack->data, 2*sizeof(long long) + stack->capacity*sizeof(StackElem)/2);
+    assert(newPointer != nullptr && "MEMORY_DECREASE_ERROR");
     stack->capacity /= 2;
+
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        for (int curIdx = stack->size + 1; curIdx < stack->capacity; curIdx++) {
+            *(StackElem*)(stack->data + sizeof(long long) + curIdx*sizeof(StackElem)) = POISON;
+        }
+    #endif
+
+    *(long long*)(stack->data + sizeof(long long) + stack->capacity*sizeof(StackElem)) = cellCanary;
     return newPointer;
 }
