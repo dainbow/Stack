@@ -317,20 +317,20 @@ int StackDump(Stack* stack, FILE* outstream) {
 		fprintf(outstream, "Stack canaries:\n");
 		fprintf(outstream, "	canaryLeft[%p] = %d (%s)\n",
 				&stack->canaryLeft,	 stack->canaryLeft,	 (stack->canaryLeft	 == CANARY) ?
-															"Ok" : "IRRUPTION");
+				"Ok" : "IRRUPTION");
 		fprintf(outstream, "	canaryRight[%p] = %d (%s)\n",
 				&stack->canaryRight, stack->canaryRight, (stack->canaryRight == CANARY) ?
-															"Ok" : "IRRUPTION");
+				"Ok" : "IRRUPTION");
 
 		canary* leftDataCanaryLocation	= (canary*)stack->data;
 		canary* rightDataCanaryLocation = (canary*)(stack->data + sizeof(canary) + 2 * sizeof(hashValue) + stack->capacity * sizeof(StackElem));
 		fprintf(outstream, "Data canaries:\n");
 		fprintf(outstream, "	canaryLeft[%p] = %d (%s)\n",
 				leftDataCanaryLocation,	 *leftDataCanaryLocation,  (*leftDataCanaryLocation	 == CANARY) ?
-																		"Ok" : "IRRUPTION");
+				"Ok" : "IRRUPTION");
 		fprintf(outstream, "	canaryRight[%p] = %d (%s)\n\n",
 				rightDataCanaryLocation, *rightDataCanaryLocation, (*rightDataCanaryLocation == CANARY) ?
-																		"Ok" : "IRRUPTION");
+				"Ok" : "IRRUPTION");
 	#endif
 
 	#if (STACK_DEBUG >= HIGH_LEVEL)
@@ -342,7 +342,7 @@ int StackDump(Stack* stack, FILE* outstream) {
 				stackHashLocation, *stackHashLocation);
 		fprintf(outstream, "	Current stack hash = %I64d\n", curHash);
 		fprintf(outstream, "	%s\n", (*stackHashLocation == curHash) ?
-										"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
+				"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
 
 		hashValue* dataHashLocation = (hashValue*)(stack->data + sizeof(canary) + sizeof(hashValue));
 		curHash = GetDataHash(stack);
@@ -367,12 +367,12 @@ int StackDump(Stack* stack, FILE* outstream) {
 			if (curIdx < stack->size) {
 				fprintf(outstream, "   *[%d][%p] = %d (%s)\n",
 						curIdx, curElement, *curElement, (*curElement == POISON) ?
-														"MAYBE POISON" : "Ok");
+						"MAYBE POISON" : "Ok");
 			}
 			else {
 				fprintf(outstream, "   [%d][%p] = %d (%s)\n",
 						curIdx, curElement, *curElement, (*curElement == POISON) ?
-															"Poison" : "NOT POISON, BUT SHOULD BE");
+						"Poison" : "NOT POISON, BUT SHOULD BE");
 			}
 		}
 
