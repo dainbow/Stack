@@ -355,52 +355,52 @@ int StackDump(Stack* stack, FILE* outstream) {
 				"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
 	#endif
 
-	fprintf(outstream, "data[%p] (%s)\n",
-			stack->data, ErrorToString(IsDataOk(stack)));
-	#if (STACK_DEBUG >= HIGH_LEVEL)
-		uint8_t* beginningOfData = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-		fprintf(outstream, "{\n");
+    fprintf(outstream, "data[%p] (%s)\n",
+            stack->data, ErrorToString(IsDataOk(stack)));
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        uint8_t* beginningOfData = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+        fprintf(outstream, "{\n");
 
-		for(int32_t curIdx = 0; curIdx < stack->capacity; curIdx++) {
-			StackElem* curElement = (StackElem*)(beginningOfData + curIdx * sizeof(StackElem));
+        for(int32_t curIdx = 0; curIdx < stack->capacity; curIdx++) {
+            StackElem* curElement = (StackElem*)(beginningOfData + curIdx * sizeof(StackElem));
 
-			if (curIdx < stack->size) {
-				fprintf(outstream, "   *[%d][%p] = %d (%s)\n",
-						curIdx, curElement, *curElement, (*curElement == POISON) ?
-						"MAYBE POISON" : "Ok");
-			}
-			else {
-				fprintf(outstream, "   [%d][%p] = %d (%s)\n",
-						curIdx, curElement, *curElement, (*curElement == POISON) ?
-						"Poison" : "NOT POISON, BUT SHOULD BE");
-			}
-		}
+            if (curIdx < stack->size) {
+                fprintf(outstream, "   *[%d][%p] = %d (%s)\n",
+                        curIdx, curElement, *curElement, (*curElement == POISON) ?
+                        "MAYBE POISON" : "Ok");
+            }
+            else {
+                fprintf(outstream, "   [%d][%p] = %d (%s)\n",
+                        curIdx, curElement, *curElement, (*curElement == POISON) ?
+                        "Poison" : "NOT POISON, BUT SHOULD BE");
+            }
+        }
 
-		fprintf(outstream, "}\n");
-	#endif
+        fprintf(outstream, "}\n");
+    #endif
 
-	return 0;
+    return 0;
 }
 
 const char* ErrorToString(StackError error) {
-	switch(error) {
-		case NO_ERROR:						return "Ok";
-		case STACK_OVERFLOW:				return "Overflow";
-		case STACK_UNDERFLOW:				return "Underflow";
-		case CAPACITY_NEGATIVE:				return "Negative capacity";
-		case DATA_NULL:						return "Data is null";
-		case STACK_FREE:					return "Stack is already free";
-		case STACK_NULL:					return "Stack is null";
-		case CAPACITY_INFINITE:				return "Capacity is infinite";
-		case LEFT_STACK_CANARY_IRRUPTION:	return "Someone irrupted left stack canary";
-		case RIGHT_STACK_CANARY_IRRUPTION:	return "Someone irrupted right stack canary";
-		case LEFT_DATA_CANARY_IRRUPTION:	return "Someone irrupted left data canary";
-		case RIGHT_DATA_CANARY_IRRUPTION:	return "Someone irrupted right data canary";
-		case STACK_HASH_IRRUPTION:			return "Someone irrupted stack";
-		case DATA_HASH_IRRUPTION:			return "Someone irrupted data";
+    switch(error) {
+        case NO_ERROR:						return "Ok";
+        case STACK_OVERFLOW:				return "Overflow";
+        case STACK_UNDERFLOW:				return "Underflow";
+        case CAPACITY_NEGATIVE:				return "Negative capacity";
+        case DATA_NULL:						return "Data is null";
+        case STACK_FREE:					return "Stack is already free";
+        case STACK_NULL:					return "Stack is null";
+        case CAPACITY_INFINITE:				return "Capacity is infinite";
+        case LEFT_STACK_CANARY_IRRUPTION:	return "Someone irrupted left stack canary";
+        case RIGHT_STACK_CANARY_IRRUPTION:	return "Someone irrupted right stack canary";
+        case LEFT_DATA_CANARY_IRRUPTION:	return "Someone irrupted left data canary";
+        case RIGHT_DATA_CANARY_IRRUPTION:	return "Someone irrupted right data canary";
+        case STACK_HASH_IRRUPTION:			return "Someone irrupted stack";
+        case DATA_HASH_IRRUPTION:			return "Someone irrupted data";
 
-		default:							return "Unknown error";
-	}
+        default:							return "Unknown error";
+    }
 }
 
 uint8_t* StackIncrease(Stack* stack) {
@@ -449,12 +449,12 @@ uint8_t* StackDecrease(Stack* stack) {
     uint8_t* beginningOfData        = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
     canary* rightDataCanaryLocation = (canary*)(beginningOfData + sizeOfData);
 
-    canary cellCanary	= *rightDataCanaryLocation;
+    canary cellCanary   = *rightDataCanaryLocation;
     *rightDataCanaryLocation = 0;
 
     uint8_t* newPointer = (uint8_t*)realloc(stack->data, sizeOfDataProtection + sizeOfDecreasedData);
     assert(newPointer  != nullptr && "MEMORY_DECREASE_ERROR");
-    stack->capacity	   /= (int32_t)DECREASE_MULTIPLIER;
+    stack->capacity    /= (int32_t)DECREASE_MULTIPLIER;
 
     beginningOfData          = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
     sizeOfData               = stack->capacity * sizeof(StackElem);
