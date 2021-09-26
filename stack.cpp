@@ -114,10 +114,7 @@ int main() {
 
 	StackPush(&intStack, 5);
 	StackPush(&intStack, 12);
-	StackPush(&intStack, 13);
-
-	//intStack.dumpInfo = {LOCATION, "intStack"};
-	//StackDump(&intStack);
+	StackPush(&intStack, 17);
 
 	StackPush(&intStack, 13);
 
@@ -320,20 +317,20 @@ int StackDump(Stack* stack, FILE* outstream) {
 		fprintf(outstream, "Stack canaries:\n");
 		fprintf(outstream, "	canaryLeft[%p] = %d (%s)\n",
 				&stack->canaryLeft,	 stack->canaryLeft,	 (stack->canaryLeft	 == CANARY) ?
-																"Ok" : "IRRUPTION");
+															"Ok" : "IRRUPTION");
 		fprintf(outstream, "	canaryRight[%p] = %d (%s)\n",
 				&stack->canaryRight, stack->canaryRight, (stack->canaryRight == CANARY) ?
-																	"Ok" : "IRRUPTION");
+															"Ok" : "IRRUPTION");
 
 		canary* leftDataCanaryLocation	= (canary*)stack->data;
 		canary* rightDataCanaryLocation = (canary*)(stack->data + sizeof(canary) + 2 * sizeof(hashValue) + stack->capacity * sizeof(StackElem));
 		fprintf(outstream, "Data canaries:\n");
 		fprintf(outstream, "	canaryLeft[%p] = %d (%s)\n",
 				leftDataCanaryLocation,	 *leftDataCanaryLocation,  (*leftDataCanaryLocation	 == CANARY) ?
-																			"Ok" : "IRRUPTION");
+																		"Ok" : "IRRUPTION");
 		fprintf(outstream, "	canaryRight[%p] = %d (%s)\n\n",
 				rightDataCanaryLocation, *rightDataCanaryLocation, (*rightDataCanaryLocation == CANARY) ?
-																			"Ok" : "IRRUPTION");
+																		"Ok" : "IRRUPTION");
 	#endif
 
 	#if (STACK_DEBUG >= HIGH_LEVEL)
@@ -345,7 +342,7 @@ int StackDump(Stack* stack, FILE* outstream) {
 				stackHashLocation, *stackHashLocation);
 		fprintf(outstream, "	Current stack hash = %I64d\n", curHash);
 		fprintf(outstream, "	%s\n", (*stackHashLocation == curHash) ?
-									"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
+										"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
 
 		hashValue* dataHashLocation = (hashValue*)(stack->data + sizeof(canary) + sizeof(hashValue));
 		curHash = GetDataHash(stack);
@@ -355,7 +352,7 @@ int StackDump(Stack* stack, FILE* outstream) {
 		fprintf(outstream, "	Current data hash = %I64d\n", curHash);
 		fprintf(outstream, "	%s\n\n",
 				(*dataHashLocation == curHash) ?
-			"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
+				"(Hashes are equal)" : "(HASHES AREN'T EQUAL)");
 	#endif
 
 	fprintf(outstream, "data[%p] (%s)\n",
@@ -365,7 +362,7 @@ int StackDump(Stack* stack, FILE* outstream) {
 		fprintf(outstream, "{\n");
 
 		for(int32_t curIdx = 0; curIdx < stack->capacity; curIdx++) {
-			StackElem* curElement = (StackElem*)(beginningOfData + curIdx*sizeof(StackElem));
+			StackElem* curElement = (StackElem*)(beginningOfData + curIdx * sizeof(StackElem));
 
 			if (curIdx < stack->size) {
 				fprintf(outstream, "   *[%d][%p] = %d (%s)\n",
