@@ -404,85 +404,85 @@ const char* ErrorToString(StackError error) {
 }
 
 uint8_t* StackIncrease(Stack* stack) {
-	CheckAllStack(stack);
-	uint32_t sizeOfData             = stack->capacity * sizeof(StackElem);
-	uint32_t sizeOfDataProtection   = 2 * (sizeof(canary) + sizeof(hashValue));
-	uint32_t sizeOfIncreasedData    = sizeOfData * (uint32_t)INCREASE_MULTIPLIER + 1;
+    CheckAllStack(stack);
+    uint32_t sizeOfData             = stack->capacity * sizeof(StackElem);
+    uint32_t sizeOfDataProtection   = 2 * (sizeof(canary) + sizeof(hashValue));
+    uint32_t sizeOfIncreasedData    = sizeOfData * (uint32_t)INCREASE_MULTIPLIER + 1;
 
-	uint8_t* beginningOfData        = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-	canary* rightDataCanaryLocation = (canary*)(beginningOfData + sizeOfData);
+    uint8_t* beginningOfData        = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+    canary* rightDataCanaryLocation = (canary*)(beginningOfData + sizeOfData);
 
-	canary cellCanary = *rightDataCanaryLocation;
-	*rightDataCanaryLocation = 0;
+    canary cellCanary = *rightDataCanaryLocation;
+    *rightDataCanaryLocation = 0;
 
-	uint8_t* newPointer = (uint8_t*)realloc(stack->data, sizeOfDataProtection + sizeOfIncreasedData);
-	assert(newPointer  != nullptr && "MEMORY_INCREASE_ERR");
-	stack->capacity		= stack->capacity * (int32_t)INCREASE_MULTIPLIER + 1;
+    uint8_t* newPointer = (uint8_t*)realloc(stack->data, sizeOfDataProtection + sizeOfIncreasedData);
+    assert(newPointer  != nullptr && "MEMORY_INCREASE_ERR");
+    stack->capacity		= stack->capacity * (int32_t)INCREASE_MULTIPLIER + 1;
 
-	beginningOfData          = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-	sizeOfData               = stack->capacity * sizeof(StackElem);
-	rightDataCanaryLocation  = (canary*)(beginningOfData + sizeOfData);
+    beginningOfData          = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+    sizeOfData               = stack->capacity * sizeof(StackElem);
+    rightDataCanaryLocation  = (canary*)(beginningOfData + sizeOfData);
 
-	#if (STACK_DEBUG >= HIGH_LEVEL)
+    #if (STACK_DEBUG >= HIGH_LEVEL)
         for (int32_t curIdx  = stack->size + 1; curIdx < stack->capacity; curIdx++) {
             *(StackElem*)(beginningOfData + curIdx*sizeof(StackElem)) = POISON;
         }
-	#endif
+    #endif
 
-	*rightDataCanaryLocation = cellCanary;
+    *rightDataCanaryLocation = cellCanary;
 
-	#if (STACK_DEBUG >= HIGH_LEVEL)
-		WriteAllStackHash(stack);
-	#endif
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        WriteAllStackHash(stack);
+    #endif
 
-	CheckAllStack(stack);
+    CheckAllStack(stack);
 
-	return newPointer;
+    return newPointer;
 }
 
 uint8_t* StackDecrease(Stack* stack) {
-	CheckAllStack(stack);
-	uint32_t sizeOfData				= stack->capacity * sizeof(StackElem);
-	uint32_t sizeOfDataProtection	= 2 * (sizeof(canary) + sizeof(hashValue));
-	uint32_t sizeOfDecreasedData	= sizeOfData / (uint32_t)DECREASE_MULTIPLIER;
+    CheckAllStack(stack);
+    uint32_t sizeOfData             = stack->capacity * sizeof(StackElem);
+    uint32_t sizeOfDataProtection   = 2 * (sizeof(canary) + sizeof(hashValue));
+    uint32_t sizeOfDecreasedData    = sizeOfData / (uint32_t)DECREASE_MULTIPLIER;
 
-	uint8_t* beginningOfData		= stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-	canary* rightDataCanaryLocation = (canary*)(beginningOfData + sizeOfData);
+    uint8_t* beginningOfData        = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+    canary* rightDataCanaryLocation = (canary*)(beginningOfData + sizeOfData);
 
-	canary cellCanary	= *rightDataCanaryLocation;
-	*rightDataCanaryLocation = 0;
+    canary cellCanary	= *rightDataCanaryLocation;
+    *rightDataCanaryLocation = 0;
 
-	uint8_t* newPointer = (uint8_t*)realloc(stack->data, sizeOfDataProtection + sizeOfDecreasedData);
-	assert(newPointer  != nullptr && "MEMORY_DECREASE_ERROR");
-	stack->capacity	   /= (int32_t)DECREASE_MULTIPLIER;
+    uint8_t* newPointer = (uint8_t*)realloc(stack->data, sizeOfDataProtection + sizeOfDecreasedData);
+    assert(newPointer  != nullptr && "MEMORY_DECREASE_ERROR");
+    stack->capacity	   /= (int32_t)DECREASE_MULTIPLIER;
 
-	beginningOfData			 = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-	sizeOfData				 = stack->capacity * sizeof(StackElem);
-	rightDataCanaryLocation	 = (canary*)(beginningOfData + sizeOfData);
+    beginningOfData			 = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+    sizeOfData				 = stack->capacity * sizeof(StackElem);
+    rightDataCanaryLocation	 = (canary*)(beginningOfData + sizeOfData);
 
-	#if (STACK_DEBUG >= HIGH_LEVEL)
-		for (int32_t curIdx	 = stack->size + 1; curIdx < stack->capacity; curIdx++) {
-			*(StackElem*)(beginningOfData + curIdx * sizeof(StackElem)) = POISON;
-		}
-	#endif
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        for (int32_t curIdx	 = stack->size + 1; curIdx < stack->capacity; curIdx++) {
+            *(StackElem*)(beginningOfData + curIdx * sizeof(StackElem)) = POISON;
+        }
+    #endif
 
-	*rightDataCanaryLocation = cellCanary;
+    *rightDataCanaryLocation = cellCanary;
 
-	#if (STACK_DEBUG >= HIGH_LEVEL)
-		WriteAllStackHash(stack);
-	#endif
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+        WriteAllStackHash(stack);
+    #endif
 
-	CheckAllStack(stack);
+    CheckAllStack(stack);
 
-	return newPointer;
+    return newPointer;
 }
 
 uint64_t powllu(int32_t base, int32_t power) {
-	uint64_t result = 1;
+    uint64_t result = 1;
 
-	for (int32_t curMulti = 0; curMulti < power; curMulti++) {
-		result *= base;
-	}
+    for (int32_t curMulti = 0; curMulti < power; curMulti++) {
+        result *= base;
+    }
 
-	return result;
+    return result;
 }
