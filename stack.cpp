@@ -456,12 +456,12 @@ uint8_t* StackDecrease(Stack* stack) {
     assert(newPointer  != nullptr && "MEMORY_DECREASE_ERROR");
     stack->capacity	   /= (int32_t)DECREASE_MULTIPLIER;
 
-    beginningOfData			 = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-    sizeOfData				 = stack->capacity * sizeof(StackElem);
-    rightDataCanaryLocation	 = (canary*)(beginningOfData + sizeOfData);
+    beginningOfData          = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+    sizeOfData               = stack->capacity * sizeof(StackElem);
+    rightDataCanaryLocation  = (canary*)(beginningOfData + sizeOfData);
 
     #if (STACK_DEBUG >= HIGH_LEVEL)
-        for (int32_t curIdx	 = stack->size + 1; curIdx < stack->capacity; curIdx++) {
+        for (int32_t curIdx  = stack->size + 1; curIdx < stack->capacity; curIdx++) {
             *(StackElem*)(beginningOfData + curIdx * sizeof(StackElem)) = POISON;
         }
     #endif
