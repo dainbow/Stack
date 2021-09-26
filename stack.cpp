@@ -96,9 +96,9 @@ StackError IsCapacityOk(Stack* stack);
 StackError IsSizeOk(Stack* stack);
 StackError IsAllOk(Stack* stack);
 
-uint64_t GetHash(uint8_t* pointer, uint32_t size);
-uint64_t GetStackHash(Stack* stack);
-uint64_t GetDataHash(Stack* stack);
+hashValue GetHash(uint8_t* pointer, uint32_t size);
+hashValue GetStackHash(Stack* stack);
+hashValue GetDataHash(Stack* stack);
 void WriteAllStackHash(Stack* stack);
 
 int StackDump(Stack* stack, FILE* outstream = stderr);
@@ -263,11 +263,11 @@ StackError IsAllOk(Stack* stack) {
     return NO_ERROR;
 }
 
-uint64_t GetHash(uint8_t* pointer, uint32_t size) {
+hashValue GetHash(uint8_t* pointer, uint32_t size) {
     assert(pointer != nullptr);
     assert(size > 0);
 
-    uint64_t hashSum = 0;
+    hashValue hashSum = 0;
     for (uint32_t curByte = 0; curByte < size; curByte++) {
         hashSum += *(pointer + curByte) * powllu(HASH_BASE, curByte);
     }
@@ -275,14 +275,14 @@ uint64_t GetHash(uint8_t* pointer, uint32_t size) {
     return hashSum;
 }
 
-uint64_t GetStackHash(Stack* stack) {
+hashValue GetStackHash(Stack* stack) {
     uint8_t* beginningOfStack = (uint8_t*)stack + sizeof(canary);
     uint32_t sizeOfStack      = sizeof(Stack) - 2 * sizeof(canary);
 
     return GetHash(beginningOfStack, sizeOfStack);
 }
 
-uint64_t GetDataHash(Stack* stack) {
+hashValue GetDataHash(Stack* stack) {
     uint8_t* beginningOfData = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
     uint32_t sizeOfData      = stack->capacity * sizeof(StackElem);
 
@@ -335,7 +335,7 @@ int StackDump(Stack* stack, FILE* outstream) {
 
     #if (STACK_DEBUG >= HIGH_LEVEL)
         hashValue* stackHashLocation = (hashValue*)(stack->data + sizeof(canary));
-        uint64_t curHash = GetStackHash(stack);
+        hashValue curHash = GetStackHash(stack);
 
         fprintf(outstream, "Stack hashes:\n");
         fprintf(outstream, "    Stored stack hash[%p] = %I64d\n",
