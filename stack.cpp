@@ -405,11 +405,11 @@ const char* ErrorToString(StackError error) {
 
 uint8_t* StackIncrease(Stack* stack) {
 	CheckAllStack(stack);
-	uint32_t sizeOfData				= stack->capacity * sizeof(StackElem);
-	uint32_t sizeOfDataProtection	= 2 * (sizeof(canary) + sizeof(hashValue));
-	uint32_t sizeOfIncreasedData	= sizeOfData * (uint32_t)INCREASE_MULTIPLIER + 1;
+	uint32_t sizeOfData			    = stack->capacity * sizeof(StackElem);
+	uint32_t sizeOfDataProtection   = 2 * (sizeof(canary) + sizeof(hashValue));
+	uint32_t sizeOfIncreasedData    = sizeOfData * (uint32_t)INCREASE_MULTIPLIER + 1;
 
-	uint8_t* beginningOfData		= stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+	uint8_t* beginningOfData	    = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
 	canary* rightDataCanaryLocation = (canary*)(beginningOfData + sizeOfData);
 
 	canary cellCanary = *rightDataCanaryLocation;
@@ -419,12 +419,12 @@ uint8_t* StackIncrease(Stack* stack) {
 	assert(newPointer  != nullptr && "MEMORY_INCREASE_ERR");
 	stack->capacity		= stack->capacity * (int32_t)INCREASE_MULTIPLIER + 1;
 
-	beginningOfData			 = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
-	sizeOfData				 = stack->capacity * sizeof(StackElem);
-	rightDataCanaryLocation	 = (canary*)(beginningOfData + sizeOfData);
+	beginningOfData	         = stack->data + sizeof(canary) + 2 * sizeof(hashValue);
+	sizeOfData		         = stack->capacity * sizeof(StackElem);
+	rightDataCanaryLocation  = (canary*)(beginningOfData + sizeOfData);
 
 	#if (STACK_DEBUG >= HIGH_LEVEL)
-		for (int32_t curIdx	 = stack->size + 1; curIdx < stack->capacity; curIdx++) {
+		for (int32_t curIdx  = stack->size + 1; curIdx < stack->capacity; curIdx++) {
 			*(StackElem*)(beginningOfData + curIdx*sizeof(StackElem)) = POISON;
 		}
 	#endif
