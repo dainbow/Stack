@@ -38,6 +38,21 @@ typedef uint32_t canary;
 typedef uint64_t hashValue;
 typedef int32_t StackElem;
 
+#if (STACK_DEBUG == HIGH_LEVEL)
+    const uint32_t SHIFT = sizeof(canary) + 2 * sizeof(hashValue);
+    const uint32_t PROTECTION_SIZE = 2 * (sizeof(canary) + sizeof(hashValue));
+#endif
+
+#if (STACK_DEBUG == MID_LEVEL)
+    const uint32_t SHIFT = sizeof(canary);
+    const uint32_t PROTECTION_SIZE = 2 * sizeof(canary);
+#endif
+
+#if (STACK_DEBUG == LOW_LEVEL)
+    const uint32_t SHIFT = 0;
+    const uint32_t PROTECTION_SIZE = 0;
+#endif
+
 const uint32_t POISON = 0xE2202;
 const canary CANARY = 0xDEADBEEF;
 const uint32_t FREE_VALUE = 0xF2EE;
