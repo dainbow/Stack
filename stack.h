@@ -11,7 +11,7 @@
 #define MID_LEVEL  2
 #define HIGH_LEVEL 3
 
-#define LOCATION __FILE__, __FUNCTION__, __LINE__
+#define LOCATION(...)  { __FILE__, __FUNCTION__, __LINE__, #__VA_ARGS__ }
 
 #define STACK_DEBUG 3
 
@@ -20,18 +20,15 @@
 #endif
 
 #define StackCtor(stack)                           \
-    Stack stack;                                   \
-    stack.creationInfo = {LOCATION, #stack};       \
-    StackCtor_(&stack);
+    Stack stack = {};                              \
+    StackCtor_(&stack, LOCATION (stack));
 
 #define CheckAllStack(stack)                                                                  \
     if (StackError error = IsAllOk(stack)) {                                                  \
         printf("Error %s, read full description in dump file\n", ErrorToString(error));       \
                                                                                               \
-        stack->dumpInfo = {LOCATION, #stack};                                                 \
-                                                                                              \
-        StackDump(stack);                                                                     \
-        assert(0 && "Verify failed");                                                         \
+        StackDump(stack, LOCATION (stack));                                                                     \
+        assert(!"OK" && "Verify failed");                                                         \
     }
 
 typedef uint32_t canary;
@@ -53,8 +50,8 @@ typedef int32_t StackElem;
     const uint32_t PROTECTION_SIZE = 0;
 #endif
 
-const uint32_t POISON = 0xE2202;
-const canary CANARY = 0xDEADBEEF;
+const uint32_t POISON     = 0xE2202;
+const canary CANARY       = 0xDEADBEEF;
 const uint32_t FREE_VALUE = 0xF2EE;
 
 const uint32_t STACK_BEGINNING_CAPACITY = 50;
@@ -91,15 +88,18 @@ struct VarInfo {
 };
 
 struct Stack {
-    canary canaryLeft;
+    #if (STACK_DEBUG >= MID_LEVEL)
+        canary canaryLeft;
+    #endif
 
-    struct VarInfo creationInfo;
-    struct VarInfo dumpInfo;
+    VarInfo creationInfo;
     int32_t size;
     int32_t capacity;
     uint8_t* data;
 
-    canary canaryRight;
+    #if (STACK_DEBUG >= MID_LEVEL)
+        canary canaryRight;
+    #endif
 };
 
 //-------------------------------------------------------------------------------------------
@@ -113,7 +113,7 @@ struct Stack {
 //!       You can change POISON value if stack element type has unreachable value
 //-------------------------------------------------------------------------------------------
 
-int32_t StackCtor_(Stack* stack);
+int32_t StackCtor_(Stack* stack, VarInfo);
 
 //-------------------------------------------------------------------------------------------
 //! Destroys stack
@@ -191,6 +191,26 @@ StackError IsCapacityOk(Stack* stack);
 StackError IsSizeOk(Stack* stack);
 
 //-------------------------------------------------------------------------------------------
+//! Checks if canaries of stack are OK
+//!
+//! @param [in] stack Pointer to the stack which canaries will be checked
+//!
+//! @return One of StackError
+//-------------------------------------------------------------------------------------------
+
+StackError IsCanariesOk(Stack* stack);
+
+//-------------------------------------------------------------------------------------------
+//! Checks if hashes of stack are OK
+//!
+//! @param [in] stack Pointer to the stack which hashes will be checked
+//!
+//! @return One of StackError
+//-------------------------------------------------------------------------------------------
+
+StackError IsHashesOk(Stack* stack);
+
+//-------------------------------------------------------------------------------------------
 //! Checks if all components of stack are OK
 //!
 //! @param [in] stack Pointer to the stack which will be checked
@@ -248,7 +268,7 @@ void WriteAllStackHash(Stack* stack);
 //! @return 0 if all OK
 //-------------------------------------------------------------------------------------------
 
-int StackDump(Stack* stack, FILE* outstream = stdout);
+int StackDump(Stack* stack, VarInfo dumpInfo, FILE* outstream = stdout);
 
 //-------------------------------------------------------------------------------------------
 //! Converts StackError variable to its string representation

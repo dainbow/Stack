@@ -6,6 +6,7 @@ int main() {
     //intStack.dumpInfo = {LOCATION, "intStack"};
     //WriteAllStackHash(&intStack);
     //StackDump(&intStack);
+    *((uint8_t*)&intStack + 5) = 0;
 
     StackPush(&intStack, 13);
     StackPush(&intStack, 5);
@@ -20,11 +21,13 @@ int main() {
     StackDtor(&intStack);
 }
 
-int32_t StackCtor_(Stack* stack) {
+int32_t StackCtor_(Stack* stack, VarInfo creationInfo) {
+
     assert(stack != nullptr && "STACK_NULL");
 
-    stack->capacity    = STACK_BEGINNING_CAPACITY;
-    stack->size        = 0;
+    stack->capacity     = STACK_BEGINNING_CAPACITY;
+    stack->size         = 0;
+    stack->creationInfo = creationInfo;
 
     uint32_t sizeOfData           = stack->capacity * sizeof(StackElem);
     uint32_t sizeOfAllData        = sizeOfData + PROTECTION_SIZE;
@@ -42,6 +45,7 @@ int32_t StackCtor_(Stack* stack) {
         *(canary*)(stack->data - SHIFT)   = CANARY;
         *(canary*)(endOfData)             = CANARY;
     #endif
+
 
     #if (STACK_DEBUG >= HIGH_LEVEL)
         for (int32_t curIdx = 0; curIdx < stack->capacity; curIdx++) {
@@ -103,17 +107,7 @@ StackElem StackPop(Stack* stack) {
 }
 
 StackError IsStackOk(Stack* stack) {
-    if (stack == nullptr)                     return STACK_NULL;
-
-	#if (STACK_DEBUG >= MID_LEVEL)
-        if (stack->canaryLeft  != CANARY)     return LEFT_STACK_CANARY_IRRUPTION;
-        if (stack->canaryRight != CANARY)     return RIGHT_STACK_CANARY_IRRUPTION;
-    #endif
-
-    #if (STACK_DEBUG >= HIGH_LEVEL)
-        hashValue stackHash      = *(hashValue*)(stack->data - 2 * sizeof(hashValue));
-        if (GetStackHash(stack) != stackHash) return STACK_HASH_IRRUPTION;
-    #endif
+    if (stack == nullptr)                               return STACK_NULL;
 
     return NO_ERROR;
 }
@@ -123,24 +117,12 @@ StackError IsDataOk(Stack* stack) {
     if (stack->data - SHIFT == nullptr)                 return  DATA_NULL;
     if (stack->data - SHIFT == (uint8_t*)FREE_VALUE)    return STACK_FREE;
 
-    #if (STACK_DEBUG >= MID_LEVEL)
-        uint32_t sizeOfData = stack->capacity * sizeof(StackElem);
-
-        if (*(canary*)(stack->data - SHIFT)      != CANARY) return LEFT_DATA_CANARY_IRRUPTION;
-        if (*(canary*)(stack->data + sizeOfData) != CANARY) return RIGHT_DATA_CANARY_IRRUPTION;
-    #endif
-
-    #if (STACK_DEBUG >= HIGH_LEVEL)
-        hashValue dataHash      = *(hashValue*)(stack->data - sizeof(hashValue));
-        if (GetDataHash(stack) != dataHash) return DATA_HASH_IRRUPTION;
-    #endif
-
     return NO_ERROR;
 }
 
 StackError IsCapacityOk(Stack* stack) {
-    if (stack->capacity < 0)        return CAPACITY_NEGATIVE;
-    if (!isfinite(stack->capacity)) return CAPACITY_INFINITE;
+    if (stack->capacity < 0)             return CAPACITY_NEGATIVE;
+    if (!isfinite(stack->capacity))      return CAPACITY_INFINITE;
 
     return NO_ERROR;
 }
@@ -152,11 +134,40 @@ StackError IsSizeOk(Stack* stack) {
     return NO_ERROR;
 }
 
+StackError IsCanariesOk(Stack* stack) {
+    if (stack->canaryLeft  != CANARY)                   return LEFT_STACK_CANARY_IRRUPTION;
+    if (stack->canaryRight != CANARY)                   return RIGHT_STACK_CANARY_IRRUPTION;
+
+    uint32_t sizeOfData = stack->capacity * sizeof(StackElem);
+    if (*(canary*)(stack->data - SHIFT)      != CANARY) return LEFT_DATA_CANARY_IRRUPTION;
+    if (*(canary*)(stack->data + sizeOfData) != CANARY) return RIGHT_DATA_CANARY_IRRUPTION;
+
+    return NO_ERROR;
+}
+
+StackError IsHashesOk(Stack* stack) {
+    hashValue stackHash      = *(hashValue*)(stack->data - 2 * sizeof(hashValue));
+    hashValue dataHash       = *(hashValue*)(stack->data - sizeof(hashValue));
+
+    if (GetStackHash(stack) != stackHash) return STACK_HASH_IRRUPTION;
+    if (GetDataHash(stack)  != dataHash)  return DATA_HASH_IRRUPTION;
+
+    return NO_ERROR;
+}
+
 StackError IsAllOk(Stack* stack) {
     if (StackError error =  IsStackOk(stack))    return error;
     if (StackError error =  IsDataOk(stack))     return error;
     if (StackError error =  IsCapacityOk(stack)) return error;
     if (StackError error =  IsSizeOk(stack))     return error;
+
+    #if (STACK_DEBUG >= MID_LEVEL)
+    if (StackError error =  IsCanariesOk(stack)) return error;
+    #endif
+
+    #if (STACK_DEBUG >= HIGH_LEVEL)
+    if (StackError error =  IsHashesOk(stack))   return error;
+    #endif
 
     return NO_ERROR;
 }
@@ -193,11 +204,11 @@ void WriteAllStackHash(Stack* stack) {
     *dataHashLocation  = GetDataHash(stack);
 }
 
-int StackDump(Stack* stack, FILE* outstream) {
+int StackDump(Stack* stack, VarInfo dumpInfo, FILE* outstream) {
     setvbuf(outstream, NULL, _IONBF, 0);
 
     fprintf(outstream, "Dump from %s() at %s(%d) in stack called now \"%s\": IsStackOk() FAILED\n",
-            stack->dumpInfo.function, stack->dumpInfo.file, stack->dumpInfo.line, stack->dumpInfo.name);
+            dumpInfo.function, dumpInfo.file, dumpInfo.line, dumpInfo.name);
 
     fprintf(outstream, "stack <%s> [%p] (ok) \"%s\" ",
             NAME_OF_STACK_TYPE, &stack, stack->creationInfo.name);
