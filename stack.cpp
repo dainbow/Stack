@@ -3,11 +3,6 @@
 int main() {
     StackCtor(intStack);
 
-    //intStack.dumpInfo = {LOCATION, "intStack"};
-    //WriteAllStackHash(&intStack);
-    //StackDump(&intStack);
-    *((uint8_t*)&intStack + 5) = 0;
-
     StackPush(&intStack, 13);
     StackPush(&intStack, 5);
     StackPush(&intStack, 1);
