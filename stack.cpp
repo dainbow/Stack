@@ -3,6 +3,7 @@
 int main() {
     StackCtor(intStack);
 
+    *((uint8_t*)&intStack + 21) = 200;
     StackPush(&intStack, 13);
     StackPush(&intStack, 5);
     StackPush(&intStack, 1);
@@ -286,21 +287,21 @@ int StackDump(Stack* stack, VarInfo dumpInfo, FILE* outstream) {
 const char* ErrorToString(StackError error) {
     switch(error) {
         case NO_ERROR:                      return "Ok";
-        case STACK_OVERFLOW:                return "Overflow";
-        case STACK_UNDERFLOW:               return "Underflow";
-        case CAPACITY_NEGATIVE:             return "Negative capacity";
-        case DATA_NULL:                     return "Data is null";
-        case STACK_FREE:                    return "Stack is already free";
-        case STACK_NULL:                    return "Stack is null";
-        case CAPACITY_INFINITE:             return "Capacity is infinite";
-        case LEFT_STACK_CANARY_IRRUPTION:   return "Someone irrupted left stack canary";
-        case RIGHT_STACK_CANARY_IRRUPTION:  return "Someone irrupted right stack canary";
-        case LEFT_DATA_CANARY_IRRUPTION:    return "Someone irrupted left data canary";
-        case RIGHT_DATA_CANARY_IRRUPTION:   return "Someone irrupted right data canary";
-        case STACK_HASH_IRRUPTION:          return "Someone irrupted stack";
-        case DATA_HASH_IRRUPTION:           return "Someone irrupted data";
+        case STACK_OVERFLOW:                return "OVERFLOW";
+        case STACK_UNDERFLOW:               return "UNDERFLOW";
+        case CAPACITY_NEGATIVE:             return "NEGATIVE CAPACITY";
+        case DATA_NULL:                     return "DATA IS NULL";
+        case STACK_FREE:                    return "STACK ALREADY FREE";
+        case STACK_NULL:                    return "STACK NULL";
+        case CAPACITY_INFINITE:             return "INFINITE CAPCITY";
+        case LEFT_STACK_CANARY_IRRUPTION:   return "LEFT STACK CANARY IRRUPTION";
+        case RIGHT_STACK_CANARY_IRRUPTION:  return "RIGHT STACK CANARY IRRUPTION";
+        case LEFT_DATA_CANARY_IRRUPTION:    return "LEFT DATA CANARY IRRUPTION";
+        case RIGHT_DATA_CANARY_IRRUPTION:   return "RIGHT DATA CANARY IRRUPTION";
+        case STACK_HASH_IRRUPTION:          return "STACK IRRUPTION";
+        case DATA_HASH_IRRUPTION:           return "DATA IRRUPTION";
 
-        default:                            return "Unknown error";
+        default:                            return "UNKNOWN ERROR";
     }
 }
 
