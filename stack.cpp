@@ -3,7 +3,6 @@
 int main() {
     StackCtor(intStack);
 
-    *((uint8_t*)&intStack + 21) = 200;
     StackPush(&intStack, 13);
     StackPush(&intStack, 5);
     StackPush(&intStack, 1);
@@ -23,7 +22,10 @@ int32_t StackCtor_(Stack* stack, VarInfo creationInfo) {
 
     stack->capacity     = STACK_BEGINNING_CAPACITY;
     stack->size         = 0;
+
+    #if (STACK_DEBUG >= LOW_LEVEL)
     stack->creationInfo = creationInfo;
+    #endif
 
     uint32_t sizeOfData           = stack->capacity * sizeof(StackElem);
     uint32_t sizeOfAllData        = sizeOfData + PROTECTION_SIZE;

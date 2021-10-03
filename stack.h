@@ -11,24 +11,28 @@
 #define MID_LEVEL  2
 #define HIGH_LEVEL 3
 
-#define LOCATION(...)  { __FILE__, __FUNCTION__, __LINE__, #__VA_ARGS__ }
-
 #define STACK_DEBUG 3
 
 #ifndef STACK_DEBUG
     #define STACK_DEBUG LOW_LEVEL
 #endif
 
+#if (STACK_DEBUG >= LOW_LEVEL)
+    #define LOCATION(...) , { __FILE__, __FUNCTION__, __LINE__, #__VA_ARGS__ }
+#else
+    #define LOCATION(...)
+#endif
+
 #define StackCtor(stack)                           \
     Stack stack = {};                              \
-    StackCtor_(&stack, LOCATION (stack));
+    StackCtor_(&stack LOCATION (stack));
 
 #define CheckAllStack(stack)                                                                  \
     if (StackError error = IsAllOk(stack)) {                                                  \
         printf("Error %s, read full description in dump file\n", ErrorToString(error));       \
                                                                                               \
-        StackDump(stack, LOCATION (stack));                                                                     \
-        assert(!"OK" && "Verify failed");                                                         \
+        StackDump(stack LOCATION (stack));                                                   \
+        assert(!"OK" && "Verify failed");                                                     \
     }
 
 typedef uint32_t canary;
@@ -51,7 +55,7 @@ typedef int32_t StackElem;
 #endif
 
 const uint32_t POISON     = 0xE2202;
-const canary CANARY       = 0xDEADBEEF;
+const canary CANARY       = 0xDEAD;
 const uint32_t FREE_VALUE = 0xF2EE;
 
 const uint32_t STACK_BEGINNING_CAPACITY = 50;
@@ -88,18 +92,21 @@ struct VarInfo {
 };
 
 struct Stack {
-    #if (STACK_DEBUG >= MID_LEVEL)
-        canary canaryLeft;
-    #endif
+#if (STACK_DEBUG >= MID_LEVEL)
+    canary canaryLeft;
+#endif
 
+#if (STACK_DEBUG >= LOW_LEVEL)
     VarInfo creationInfo;
+#endif
+
     int32_t size;
     int32_t capacity;
     uint8_t* data;
 
-    #if (STACK_DEBUG >= MID_LEVEL)
-        canary canaryRight;
-    #endif
+#if (STACK_DEBUG >= MID_LEVEL)
+    canary canaryRight;
+#endif
 };
 
 //-------------------------------------------------------------------------------------------
@@ -113,7 +120,11 @@ struct Stack {
 //!       You can change POISON value if stack element type has unreachable value
 //-------------------------------------------------------------------------------------------
 
-int32_t StackCtor_(Stack* stack, VarInfo);
+#if (STACK_DEBUG >= LOW_LEVEL)
+    int32_t StackCtor_(Stack* stack, VarInfo);
+#else
+    int32_t StackCtor_(Stack* stack);
+#endif
 
 //-------------------------------------------------------------------------------------------
 //! Destroys stack
