@@ -1,3 +1,10 @@
 
 *.save
 log.txt
+stack.cpp.save.1
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/tasks.json
+a.exe
+stack.exe
+stack.exe

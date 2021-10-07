@@ -240,7 +240,7 @@ StackError IsAllOk(Stack* stack);
 //! @return Calculated hash
 //-------------------------------------------------------------------------------------------
 
-hashValue GetHash(uint8_t* pointer, uint32_t size);
+hashValue GetHash(uint8_t* pointer, uint64_t size);
 
 //-------------------------------------------------------------------------------------------
 //! Gets hash from stack structure
