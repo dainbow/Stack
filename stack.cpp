@@ -1,22 +1,5 @@
 #include "stack.h"
 
-int main() {
-    StackCtor(intStack);
-
-    StackPush(&intStack, 3);
-    StackPush(&intStack, 5);
-    //*((uint8_t*)&intStack + 12) = 5;
-    StackPush(&intStack, 1);
-    StackPush(&intStack, 22);
-
-    printf("%d\n", StackPop(&intStack));
-    printf("%d\n", StackPop(&intStack));
-    printf("%d\n", StackPop(&intStack));
-    printf("%d\n", StackPop(&intStack));
-
-    StackDtor(&intStack);
-}
-
 int32_t StackCtor_(Stack* stack, VarInfo creationInfo) {
     assert(stack != nullptr && "STACK_NULL");
 
